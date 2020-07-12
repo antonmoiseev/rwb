@@ -1,21 +1,53 @@
 import {
   Form,
   FieldError,
+  FormError,
   Label,
   TextAreaField,
   TextField,
   Submit,
+  useMutation,
 } from '@redwoodjs/web'
+import { useForm } from 'react-hook-form'
 import BlogLayout from 'src/layouts/BlogLayout'
 
+const CREATE_CONTACT = gql`
+  mutation CreateContactMutation($input: CreateContactInput!) {
+    createContact(input: $input) {
+      id
+    }
+  }
+`
+
 const ContactPage = () => {
+  const formMethods = useForm({ mode: 'onBlur' })
+
+  const [create, { loading, error }] = useMutation(CREATE_CONTACT, {
+    onCompleted: () => {
+      alert('Thank you for your submission!')
+      formMethods.reset()
+    },
+  })
+
   const onSubmit = (data) => {
+    create({ variables: { input: data } })
     console.log(data)
   }
 
   return (
     <BlogLayout>
-      <Form onSubmit={onSubmit} validation={{ mode: 'onBlur' }}>
+      {/* {error && (
+        <div style={{ color: 'red' }}>
+          {"We couldn't send your message: "}
+          {error.message}
+        </div>
+      )} */}
+      <Form onSubmit={onSubmit} error={error} formMethods={formMethods}>
+        <FormError
+          error={error}
+          wrapperStyle={{ color: 'red', backgroundColor: 'lavenderblush' }}
+        />
+
         <Label name="name" errorClassName="error">
           Name
         </Label>
@@ -31,13 +63,7 @@ const ContactPage = () => {
         </Label>
         <TextField
           name="email"
-          validation={{
-            required: true,
-            pattern: {
-              value: /[^@]+@[^.]+\..+/,
-              message: 'Please enter a valid email address',
-            },
-          }}
+          validation={{ required: true }}
           errorClassName="error"
         />
         <FieldError name="email" className="error" />
@@ -52,7 +78,7 @@ const ContactPage = () => {
         />
         <FieldError name="message" className="error" />
 
-        <Submit>Save</Submit>
+        <Submit disabled={loading}>Save</Submit>
       </Form>
     </BlogLayout>
   )
